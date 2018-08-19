@@ -122,6 +122,38 @@ describe('tests for blog', async() => {
       expect(blogsAfter.length).toBe(blogsAtStart.length-1)
     })
   })
+
+  describe('modifying a blog', async () => {
+    let addedBlog
+
+    beforeAll(async () => {
+      addedBlog = new Blog({
+        title: 'Type wars',
+        author: 'Robert C. Martin',
+        url: 'http://blog.cleancoder.com/uncle-bob/2016/05/01/TypeWars.html',
+        likes: 2
+      })
+      await addedBlog.save()
+    })
+
+    test('PUT /api/blog/:id succeeds', async () => {
+      const changedBlog = {
+        title: 'Type wars',
+        author: 'Robert C. Martin',
+        url: 'http://blog.cleancodr.com/uncle-bob/2016/05/01/TypeWars.html',
+        likes: 900
+      }
+
+      await api
+        .put(`/api/blogs/${addedBlog._id}`)
+        .send(changedBlog)
+
+      const blogsAfter = await helper.blogsInDb()
+
+      expect(blogsAfter).toContainEqual(changedBlog)
+      expect(blogsAfter).not.toContainEqual(addedBlog)
+    })
+  })
 })
 
 
