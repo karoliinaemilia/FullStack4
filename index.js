@@ -3,40 +3,25 @@ const express = require('express')
 const app = express() 
 const bodyParser = require('body-parser') 
 const cors = require('cors')
-const mongoose = require('mongoose') 
+const mongoose = require('mongoose')
+const blogsRouter = require('./controllers/blogs')
+const middleware = require('./utils/middleware') 
 
-const Blog = mongoose.model('Blog', { 
-  title: String, 
-  author: String, 
-  url: String, 
-  likes: Number 
-}) 
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config()
+}
 
-module.exports = Blog 
+mongoose
+  .connect(process.env.MONGODB_URI)
+  .then( () => {
+    console.log('connected to database', process.env.MONGODB_URI)
+  })
 
 app.use(cors()) 
 app.use(bodyParser.json()) 
+app.use(middleware.logger)
 
-const mongoUrl = 'mongodb://<dbuser>:<dbpassword>@ds125272.mlab.com:25272/blogilistafullstack'
-mongoose.connect(mongoUrl)
-
-app.get('/api/blogs', (request, response) => { 
-  Blog 
-    .find({}) 
-    .then(blogs => { 
-      response.json(blogs) 
-  }) 
-}) 
-
-app.post('/api/blogs', (request, response) => { 
-  const blog = new Blog(request.body) 
-  
-  blog 
-    .save() 
-    .then(result => { 
-      response.status(201).json(result) 
-  }) 
-}) 
+app.use('/api/blogs', blogsRouter)
 
 const PORT = 3003
 app.listen(PORT, () => {
