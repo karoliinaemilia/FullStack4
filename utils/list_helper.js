@@ -42,7 +42,7 @@ const mostBlogs = (blogs) => {
 
   let max = 0
   let authorWithMost = ''
-  
+
   for (const a of authorsUnique) {
     const number = blogs.filter(blog => blog['author'] === a).length
     if (number > max) {
