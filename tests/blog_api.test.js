@@ -95,6 +95,33 @@ describe('tests for blog', async() => {
       expect(blogsAfter.length).toBe(blogsAtStart.length)
     })
   })
+
+  describe('deletion of a blog', async () => {
+    let addedBlog
+
+    beforeAll(async() => {
+      addedBlog = new Blog ({
+        title: 'TDD harms architecture',
+        author: 'Robert C. Martin',
+        url: 'http://blog.cleancoder.com/uncle-bob/2017/03/03/TDD-Harms-Architecture.html',
+        likes: 0
+      })
+      await addedBlog.save()
+    })
+
+    test('DELETE /api/blogs/:id succeeds with proper statuscode', async() => {
+      const blogsAtStart = await helper.blogsInDb()
+
+      await api
+        .delete(`/api/blogs/${addedBlog._id}`)
+        .expect(204)
+
+      const blogsAfter = await helper.blogsInDb()
+
+      expect(blogsAfter).not.toContainEqual(addedBlog)
+      expect(blogsAfter.length).toBe(blogsAtStart.length-1)
+    })
+  })
 })
 
 
