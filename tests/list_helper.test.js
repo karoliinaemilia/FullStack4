@@ -1,4 +1,4 @@
-describe.skip('list helpers', () => {
+describe('list helpers', () => {
   const listHelper = require('../utils/list_helper')
 
   test('dummy is called', () => {
