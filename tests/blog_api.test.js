@@ -2,6 +2,7 @@ const supertest = require('supertest')
 const { app, server } = require('../index')
 const api = supertest(app)
 const Blog = require('../models/blog')
+const User = require('../models/user')
 const helper = require('./test_helper')
 
 describe('tests for blog', async() => {
@@ -152,6 +153,105 @@ describe('tests for blog', async() => {
 
       expect(blogsAfter).toContainEqual(changedBlog)
       expect(blogsAfter).not.toContainEqual(addedBlog)
+    })
+  })
+})
+
+describe('tests for user', async() => {
+
+  describe('when there is initially one user at db', async () => {
+    beforeAll(async () => {
+      await User.remove({})
+      const user = new User({
+        username: 'root',
+        name: 'nimi',
+        password: 'sekret'
+      })
+      await user.save()
+    })
+
+    describe('tests for POST to /api/users', async() => {
+
+      test('succeeds with a fresh username', async() => {
+        const usersAtStart = await helper.usersInDb()
+
+        const newUser = {
+          username: 'mluukkai',
+          name: 'Matti Luukkainen',
+          password: 'salainen'
+        }
+
+        await api
+          .post('/api/users')
+          .send(newUser)
+          .expect(200)
+          .expect('Content-Type', /application\/json/)
+
+        const usersAfter = await helper.usersInDb()
+        expect(usersAfter.length).toBe(usersAtStart.length + 1)
+        const usernames = usersAfter.map(u => u.username)
+        expect(usernames).toContain(newUser.username)
+      })
+
+      test('fails with proper statuscode if username is taken', async() => {
+        const usersAtStart = await helper.usersInDb()
+
+        const newUser = {
+          username: 'root',
+          name: 'Superuser',
+          password: 'salainen'
+        }
+
+        const result = await api
+          .post('/api/users')
+          .send(newUser)
+          .expect(400)
+          .expect('Content-Type', /application\/json/)
+
+        expect(result.body).toEqual({ error: 'username must be unique' })
+
+        const usersAfter = await helper.usersInDb()
+        expect(usersAfter.length).toBe(usersAtStart.length)
+      })
+
+      test('fails if password is shorter than 3 characters with proper statuscode', async() => {
+        const usersAtStart = await helper.usersInDb()
+
+        const newUser = {
+          username: 'rooter',
+          name: 'Rubeus',
+          password: '12',
+          adult: false
+        }
+
+        await api
+          .post('/api/users')
+          .send(newUser)
+          .expect(400)
+          .expect({ error: 'password must contain atleast 3 characters' })
+
+        const usersAfter = await helper.usersInDb()
+        expect(usersAfter.length).toBe(usersAtStart.length)
+      })
+
+      test('if adult is not given a value its value is true', async() => {
+        const usersAtStart = await helper.usersInDb()
+
+        const newUser = {
+          username: 'rooterer',
+          name: 'Rubelius',
+          password: '1223456',
+        }
+
+        await api
+          .post('/api/users')
+          .send(newUser)
+
+        const usersAfter = await helper.usersInDb()
+        expect(usersAfter.length).toBe(usersAtStart.length+1)
+        const user = usersAfter.filter(user => user.username==='rooterer')
+        expect(user[0].adult).toBe(true)
+      })
     })
   })
 })
